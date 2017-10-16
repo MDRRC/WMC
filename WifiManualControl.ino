@@ -61,8 +61,8 @@ typedef enum
    D A T A   D E C L A R A T I O N S (exported, local)
  **********************************************************************************************************************/
 
-char ssid[] = "YourSsid";     // your network SSID (name)
-char pass[] = "You password"; // your network password
+char ssid[] = "Robert2";       // your network SSID (name)
+char pass[] = "DAFTRUCK85DAF"; // your network password
 
 unsigned int WmcLocalPort; // local port to listen on
 
@@ -139,6 +139,8 @@ struct Z21Listener : public EventTask
             case WMC_STATE_INIT_GET_LOCO_INFO_RESPONSE:
             case WMC_STATE_INIT_GET_LOCO_MODE:
             case WMC_STATE_INIT_GET_LOCO_MODE_RESPONSE:
+            case WMC_STATE_POWER_ON_SET:
+            case WMC_STATE_POWER_ON:
             case WMC_STATE_MENU_SET:
             case WMC_STATE_MENU:
             case WMC_STATE_LOC_ADD_SET:
@@ -171,6 +173,8 @@ struct Z21Listener : public EventTask
             case WMC_STATE_INIT_GET_LOCO_INFO_RESPONSE:
             case WMC_STATE_INIT_GET_LOCO_MODE:
             case WMC_STATE_INIT_GET_LOCO_MODE_RESPONSE:
+            case WMC_STATE_POWER_OFF_SET:
+            case WMC_STATE_POWER_OFF:
             case WMC_STATE_MENU_SET:
             case WMC_STATE_MENU:
             case WMC_STATE_LOC_ADD_SET:
