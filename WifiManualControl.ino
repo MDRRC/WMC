@@ -11,6 +11,7 @@
 #include "ESP8266WiFi.h"
 #include "Event.h"
 #include "Loclib.h"
+#include "WmcCli.h"
 #include "WmcTft.h"
 #include "Z21Slave.h"
 #include <WiFiUdp.h>
@@ -61,8 +62,8 @@ typedef enum
    D A T A   D E C L A R A T I O N S (exported, local)
  **********************************************************************************************************************/
 
-char ssid[] = "Robert2";       // your network SSID (name)
-char pass[] = "DAFTRUCK85DAF"; // your network password
+char ssid[] = "ssid_name";     // your network SSID (name)
+char pass[] = "ssid_password"; // your network password
 
 unsigned int WmcLocalPort; // local port to listen on
 
@@ -73,6 +74,7 @@ IPAddress WmcUdpIp(192, 168, 2, 112);
 WiFiUDP WifiUdp;
 LocLib WmcLocLib;
 WmcTft WmcDisplay;
+WmcCli WmcCommandLine;
 Z21Slave WmcSlave;
 EventManager WmcEvtMngr;
 
@@ -208,7 +210,31 @@ struct Z21Listener : public EventTask
             }
             break;
         case Z21Slave::lanVersionResponse:
-        case Z21Slave::fwVersionInfoResponse: WmcStateRequest = WMC_STATE_INIT_GET_LOCO_INFO; break;
+        case Z21Slave::fwVersionInfoResponse:
+            switch (WmcState)
+            {
+            case WMC_STATE_POWER_OFF_SET:
+            case WMC_STATE_POWER_OFF:
+            case WMC_STATE_POWER_ON_SET:
+            case WMC_STATE_POWER_ON:
+            case WMC_STATE_MENU_SET:
+            case WMC_STATE_MENU:
+            case WMC_STATE_LOC_ADD_SET:
+            case WMC_STATE_LOC_ADD:
+            case WMC_STATE_LOC_ADD_FUNCTION_SET:
+            case WMC_STATE_LOC_ADD_FUNCTION:
+            case WMC_STATE_LOC_ADD_STORE:
+            case WMC_STATE_LOC_CHANGE_SET:
+            case WMC_STATE_LOC_CHANGE:
+            case WMC_STATE_LOC_REMOVE_SET:
+            case WMC_STATE_LOC_REMOVE:
+            case WMC_STATE_LOC_EXIT:
+                // Do nothing, complete init cyle or stay in menu!
+                break;
+            default: WmcStateRequest = WMC_STATE_INIT_GET_LOCO_INFO; break;
+            }
+            break;
+
         case Z21Slave::locinfo:
 
             WmcLocInfoReceived = WmcSlave.LanXLocoInfo();
@@ -469,11 +495,14 @@ void setup()
     WmcLocalPort                    = 21105;
     WmcLocAddressAdd                = 0;
 
+    Serial.begin(115200);
+
     WmcEvtMngr.subscribe(Subscriber("1", &Z21Listener));
     WmcSlave.SetEventDestination(WmcEvtMngr, "1", 1);
 
     WmcLocLib.Init();
     WmcDisplay.Init();
+    WmcCommandLine.Init();
 
     WmcDisplay.UpdateStatus("Connecting to Wifi", true, WmcTft::color_yellow);
 
@@ -536,6 +565,8 @@ void loop()
     WmcPowerOffOnButton.update();
     WmcPulseSwitchPushButton.update();
     buttonActual = WmcFunctionButtons();
+
+    WmcCommandLine.Update();
 
     if (WmcState != WmcStateRequest)
     {
@@ -1035,7 +1066,7 @@ void loop()
             }
             else
             {
-                WmcLocLib.StoreLoc(WmcLocAddressAdd, WmcLocAddFunctionAssignment);
+                WmcLocLib.StoreLoc(WmcLocAddressAdd, WmcLocAddFunctionAssignment, LocLib::storeChange);
                 WmcDisplay.ShowlocAddress(WmcLocAddressAdd, WmcTft::color_yellow);
             }
         }
@@ -1129,7 +1160,7 @@ void loop()
         }
         break;
     case WMC_STATE_LOC_ADD_STORE:
-        WmcLocLib.StoreLoc(WmcLocAddressAdd, WmcLocAddFunctionAssignment);
+        WmcLocLib.StoreLoc(WmcLocAddressAdd, WmcLocAddFunctionAssignment, LocLib::storeAdd);
         WmcLocLib.LocBubbleSort();
         WmcLocAddressAdd++;
         WmcStateRequest = WMC_STATE_LOC_ADD_SET;
