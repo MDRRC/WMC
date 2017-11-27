@@ -227,12 +227,14 @@ void setup()
     WmcPowerOffOnButton.interval(100);
     WmcPowerOffOnButton.attach(D0);
 
+    /* Init timers. */
     WmcStartMs                      = millis();
     WmcStartMsKeepAlive             = millis();
     WmcUpdatePulseSwitch            = millis();
     WmcUpdateEvent500msec           = millis();
     WmcStartMsPulseSwitchPushButton = millis();
 
+    /* Kick the state machine. */
     fsm_list::start();
 }
 
@@ -247,38 +249,34 @@ void loop()
     int8_t Delta         = 0;
     uint8_t buttonActual = 255;
 
+    /* Check for timed events. */
     if (WmcUpdate50msec() == true)
     {
         send_event(wmcUpdateEvent50msec);
     }
-    else if (WmcUpdate500msec() == true)
+
+    if (WmcUpdate500msec() == true)
     {
         send_event(wmcUpdateEvent500msec);
     }
-    else if (WmcUpdate3Sec() == true)
+
+    if (WmcUpdate3Sec() == true)
     {
         send_event(wmcUpdateEvent3Sec);
     }
 
+    /* Update button status. */
     WmcPowerOffOnButton.update();
     WmcPulseSwitchPushButton.update();
 
+    /* Check for button changes and generate evbent if required. */
     if (WmcPowerOffOnButton.rose() == true)
     {
-        Serial.println("button_power");
         wmcPushButtonEvent.Button = button_power;
         send_event(wmcPushButtonEvent);
     }
 
-    buttonActual = WmcFunctionButtons();
-    if (buttonActual != 255)
-    {
-        wmcPushButtonEvent.Button = static_cast<pushButtons>(buttonActual);
-        send_event(wmcPushButtonEvent);
-    }
-
-    WmcCommandLine.Update();
-
+    /* Pulse switch push button handling. When releasing button check time and generate event based on time.*/
     if (WmcPulseSwitchPushButton.fell() == true)
     {
         WmcStartMsPulseSwitchPushButton = millis();
@@ -310,6 +308,7 @@ void loop()
     }
     else if (WmcUpdatePulseSwitch - millis() > 150)
     {
+        /* Update pulse switch turn events if turned.*/
         WmcUpdatePulseSwitch = millis();
         Delta                = DecoderUpdate();
         if (Delta != 0)
@@ -329,4 +328,16 @@ void loop()
             send_event(wmcPulseSwitchEvent);
         }
     }
+
+    /* Function buttons on analog input.*/
+    buttonActual = WmcFunctionButtons();
+    if (buttonActual != 255)
+    {
+        /* Generate event if a button is pressed and released. */
+        wmcPushButtonEvent.Button = static_cast<pushButtons>(buttonActual);
+        send_event(wmcPushButtonEvent);
+    }
+
+    /* Command line update */
+    WmcCommandLine.Update();
 }
