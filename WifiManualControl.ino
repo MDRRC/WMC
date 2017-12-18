@@ -167,21 +167,25 @@ static uint8_t WmcFunctionButtons(void)
         {
             WmcButton = 0;
         }
-        else if ((readingIn > 322) && (readingIn < 335))
+        else if ((readingIn > 480) && (readingIn < 500))
         {
             WmcButton = 1;
         }
-        else if ((readingIn > 487) && (readingIn < 495))
+        else if ((readingIn > 645) && (readingIn < 665))
         {
             WmcButton = 2;
         }
-        else if ((readingIn > 667) && (readingIn < 677))
+        else if ((readingIn > 722) && (readingIn < 742))
         {
             WmcButton = 3;
         }
-        else if ((readingIn > 788) && (readingIn < 800))
+        else if ((readingIn > 771) && (readingIn < 791))
         {
             WmcButton = 4;
+        }
+        else if ((readingIn > 802) && (readingIn < 822))
+        {
+            WmcButton = 5;
         }
 
         /* Check for released button. Only if button released and valid
