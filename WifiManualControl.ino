@@ -310,7 +310,7 @@ void loop()
             turnedWhilePressed = false;
         }
     }
-    else if (WmcUpdatePulseSwitch - millis() > 150)
+    else if ((millis() - WmcUpdatePulseSwitch) > 75)
     {
         /* Update pulse switch turn events if turned.*/
         WmcUpdatePulseSwitch = millis();
