@@ -218,8 +218,8 @@ void setup()
     WmcCommandLine.Init();
 
     /* Init the pulse / rotary encoder. */
-    pinMode(encoder0PinA, INPUT);
-    pinMode(encoder0PinB, INPUT);
+    pinMode(encoder0PinA, INPUT_PULLUP);
+    pinMode(encoder0PinB, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(encoder0PinA), doEncoderA, FALLING);
 
     /* Init debounces for switches. */
