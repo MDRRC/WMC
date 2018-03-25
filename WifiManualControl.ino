@@ -14,6 +14,7 @@
 #include "WmcTft.h"
 #include "Z21Slave.h"
 #include "fsmlist.hpp"
+#include "wmc_event.h"
 
 /***********************************************************************************************************************
    E X P O R T E D   S Y M B O L   D E F I N I T I O N S (defines, typedefs)
