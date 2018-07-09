@@ -8,18 +8,17 @@
    I N C L U D E S
  **********************************************************************************************************************/
 #include "Bounce2.h"
-
 #include "Loclib.h"
-#include "WmcCli.h"
 #include "WmcTft.h"
 #include "Z21Slave.h"
+#include "app_cfg.h"
 #include "fsmlist.hpp"
 #include "wmc_event.h"
 
 /***********************************************************************************************************************
    E X P O R T E D   S Y M B O L   D E F I N I T I O N S (defines, typedefs)
  **********************************************************************************************************************/
-#define UDP_TIMEOUT 3000
+#define WMC_PULSE_SWITCH_UPDATE_TIME 50
 #define encoder0PinA D5
 #define encoder0PinB D6
 #define AnalogIn A0
@@ -28,17 +27,15 @@
    D A T A   D E C L A R A T I O N S (exported, local)
  **********************************************************************************************************************/
 
-WmcCli WmcCommandLine;
-
 Bounce WmcPowerOffOnButton      = Bounce();
 Bounce WmcPulseSwitchPushButton = Bounce();
 
-unsigned long WmcStartMs;
 unsigned long WmcStartMsPulseSwitchPushButton;
-unsigned long WmcStartMsKeepAlive;
-unsigned long WmcUpdateMs;
+unsigned long WmcUpdateTimer3Seconds;
 unsigned long WmcUpdatePulseSwitch;
-unsigned long WmcUpdateEvent500msec;
+unsigned long WmcUpdateTimer50msec;
+unsigned long WmcUpdateTimer100msec;
+unsigned long WmcUpdateTimer500msec;
 
 // buffer to hold incoming and outgoing packets
 bool turnedWhilePressed           = false;
@@ -51,6 +48,7 @@ updateEvent3sec wmcUpdateEvent3Sec;
 pushButtonsEvent wmcPushButtonEvent;
 pulseSwitchEvent wmcPulseSwitchEvent;
 updateEvent50msec wmcUpdateEvent50msec;
+updateEvent100msec wmcUpdateEvent100msec;
 updateEvent500msec wmcUpdateEvent500msec;
 
 /***********************************************************************************************************************
@@ -59,13 +57,15 @@ updateEvent500msec wmcUpdateEvent500msec;
 
 /***********************************************************************************************************************
  */
-static bool WmcUpdate3Sec(void)
+static bool WmcUpdate50msec(void)
 {
     bool Result = false;
-    if (millis() - WmcStartMsKeepAlive > 3000)
+
+    if (millis() - WmcUpdateTimer50msec > 50)
     {
-        Result              = true;
-        WmcStartMsKeepAlive = millis();
+        Result               = true;
+        WmcUpdateTimer50msec = millis();
+        send_event(wmcUpdateEvent50msec);
     }
 
     return (Result);
@@ -73,14 +73,15 @@ static bool WmcUpdate3Sec(void)
 
 /***********************************************************************************************************************
  */
-static bool WmcUpdate50msec(void)
+static bool WmcUpdate100msec(void)
 {
     bool Result = false;
 
-    if (millis() - WmcUpdateMs > 50)
+    if (millis() - WmcUpdateTimer100msec >= 100)
     {
-        Result      = true;
-        WmcUpdateMs = millis();
+        Result                = true;
+        WmcUpdateTimer100msec = millis();
+        send_event(wmcUpdateEvent100msec);
     }
 
     return (Result);
@@ -92,10 +93,26 @@ static bool WmcUpdate500msec(void)
 {
     bool Result = false;
 
-    if (millis() - WmcUpdateEvent500msec >= 500)
+    if (millis() - WmcUpdateTimer500msec >= 500)
     {
         Result                = true;
-        WmcUpdateEvent500msec = millis();
+        WmcUpdateTimer500msec = millis();
+        send_event(wmcUpdateEvent500msec);
+    }
+
+    return (Result);
+}
+
+/***********************************************************************************************************************
+ */
+static bool WmcUpdate3Sec(void)
+{
+    bool Result = false;
+    if (millis() - WmcUpdateTimer3Seconds > 3000)
+    {
+        Result                 = true;
+        WmcUpdateTimer3Seconds = millis();
+        send_event(wmcUpdateEvent3Sec);
     }
 
     return (Result);
@@ -164,29 +181,53 @@ static uint8_t WmcFunctionButtons(void)
         readingIn = analogRead(AnalogIn);
 
         /* Check for a pressed button. No check on two or more pressed buttons! */
-        if (readingIn < 10)
+        if (readingIn < 30)
         {
+#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
+            WmcButton = 4;
+#else
             WmcButton = 0;
+#endif
         }
         else if ((readingIn > 480) && (readingIn < 500))
         {
+#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
+            WmcButton = 5;
+#else
             WmcButton = 1;
+#endif
         }
         else if ((readingIn > 645) && (readingIn < 665))
         {
+#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
             WmcButton = 2;
+#else
+            WmcButton = 2;
+#endif
         }
         else if ((readingIn > 722) && (readingIn < 742))
         {
+#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
             WmcButton = 3;
+#else
+            WmcButton = 3;
+#endif
         }
         else if ((readingIn > 771) && (readingIn < 791))
         {
+#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
+            WmcButton = 0;
+#else
             WmcButton = 4;
+#endif
         }
         else if ((readingIn > 802) && (readingIn < 822))
         {
+#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
+            WmcButton = 1;
+#else
             WmcButton = 5;
+#endif
         }
 
         /* Check for released button. Only if button released and valid
@@ -216,7 +257,6 @@ static uint8_t WmcFunctionButtons(void)
 void setup()
 {
     Serial.begin(115200);
-    WmcCommandLine.Init();
 
     /* Init the pulse / rotary encoder. */
     pinMode(encoder0PinA, INPUT_PULLUP);
@@ -233,10 +273,12 @@ void setup()
     WmcPowerOffOnButton.attach(D0);
 
     /* Init timers. */
-    WmcStartMs                      = millis();
-    WmcStartMsKeepAlive             = millis();
+    WmcUpdateTimer3Seconds          = millis();
     WmcUpdatePulseSwitch            = millis();
-    WmcUpdateEvent500msec           = millis();
+    WmcUpdateTimer50msec            = millis();
+    WmcUpdateTimer100msec           = millis();
+    WmcUpdateTimer500msec           = millis();
+    WmcUpdateTimer3Seconds          = millis();
     WmcStartMsPulseSwitchPushButton = millis();
 
     /* Kick the state machine. */
@@ -255,20 +297,10 @@ void loop()
     uint8_t buttonActual = 255;
 
     /* Check for timed events. */
-    if (WmcUpdate50msec() == true)
-    {
-        send_event(wmcUpdateEvent50msec);
-    }
-
-    if (WmcUpdate500msec() == true)
-    {
-        send_event(wmcUpdateEvent500msec);
-    }
-
-    if (WmcUpdate3Sec() == true)
-    {
-        send_event(wmcUpdateEvent3Sec);
-    }
+    WmcUpdate50msec();
+    WmcUpdate100msec();
+    WmcUpdate500msec();
+    WmcUpdate3Sec();
 
     /* Update button status. */
     WmcPowerOffOnButton.update();
@@ -311,7 +343,7 @@ void loop()
             turnedWhilePressed = false;
         }
     }
-    else if ((millis() - WmcUpdatePulseSwitch) > 75)
+    else if ((millis() - WmcUpdatePulseSwitch) > WMC_PULSE_SWITCH_UPDATE_TIME)
     {
         /* Update pulse switch turn events if turned.*/
         WmcUpdatePulseSwitch = millis();
@@ -342,7 +374,4 @@ void loop()
         wmcPushButtonEvent.Button = static_cast<pushButtons>(buttonActual);
         send_event(wmcPushButtonEvent);
     }
-
-    /* Command line update */
-    WmcCommandLine.Update();
 }
