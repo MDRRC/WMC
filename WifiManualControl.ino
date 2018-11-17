@@ -168,83 +168,6 @@ int8_t DecoderUpdate(void)
 }
 
 /***********************************************************************************************************************
- */
-static uint8_t WmcFunctionButtons(void)
-{
-    int readingIn;
-    uint8_t Stat = 255;
-
-    /* Read analog once every 100msec, reading it each time in loop disturbs the
-       Wifi... */
-    if (millis() % 100 == 0)
-    {
-        readingIn = analogRead(AnalogIn);
-
-        /* Check for a pressed button. No check on two or more pressed buttons! */
-        if (readingIn < 30)
-        {
-#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
-            WmcButton = 4;
-#else
-            WmcButton = 0;
-#endif
-        }
-        else if ((readingIn > 480) && (readingIn < 500))
-        {
-#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
-            WmcButton = 5;
-#else
-            WmcButton = 1;
-#endif
-        }
-        else if ((readingIn > 645) && (readingIn < 665))
-        {
-#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
-            WmcButton = 2;
-#else
-            WmcButton = 2;
-#endif
-        }
-        else if ((readingIn > 722) && (readingIn < 742))
-        {
-#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
-            WmcButton = 3;
-#else
-            WmcButton = 3;
-#endif
-        }
-        else if ((readingIn > 771) && (readingIn < 791))
-        {
-#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
-            WmcButton = 0;
-#else
-            WmcButton = 4;
-#endif
-        }
-        else if ((readingIn > 802) && (readingIn < 822))
-        {
-#if APP_CFG_PCB_VERSION == APP_CFG_PCB_VERSION_REV01
-            WmcButton = 1;
-#else
-            WmcButton = 5;
-#endif
-        }
-
-        /* Check for released button. Only if button released and valid
-         * button press return it.*/
-        if (readingIn > 950)
-        {
-            if (WmcButton != 255)
-            {
-                Stat      = WmcButton;
-                WmcButton = 255;
-            }
-        }
-    }
-    return (Stat);
-}
-
-/***********************************************************************************************************************
    E X P O R T E D   F U N C T I O N S
  **********************************************************************************************************************/
 
@@ -294,7 +217,6 @@ void setup()
 void loop()
 {
     int8_t Delta         = 0;
-    uint8_t buttonActual = 255;
 
     /* Check for timed events. */
     WmcUpdate50msec();
@@ -364,14 +286,5 @@ void loop()
 
             send_event(wmcPulseSwitchEvent);
         }
-    }
-
-    /* Function buttons on analog input.*/
-    buttonActual = WmcFunctionButtons();
-    if (buttonActual != 255)
-    {
-        /* Generate event if a button is pressed and released. */
-        wmcPushButtonEvent.Button = static_cast<pushButtons>(buttonActual);
-        send_event(wmcPushButtonEvent);
     }
 }
