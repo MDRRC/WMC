@@ -21,7 +21,6 @@
 #define WMC_PULSE_SWITCH_UPDATE_TIME 50
 #define encoder0PinA D5
 #define encoder0PinB D6
-#define AnalogIn A0
 
 /***********************************************************************************************************************
    D A T A   D E C L A R A T I O N S (exported, local)
@@ -216,7 +215,7 @@ void setup()
  ******************************************************************************/
 void loop()
 {
-    int8_t Delta         = 0;
+    int8_t Delta = 0;
 
     /* Check for timed events. */
     WmcUpdate50msec();
