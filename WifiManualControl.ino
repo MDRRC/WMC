@@ -37,9 +37,9 @@ unsigned long WmcUpdateTimer100msec;
 unsigned long WmcUpdateTimer500msec;
 
 // buffer to hold incoming and outgoing packets
-bool turnedWhilePressed           = false;
-unsigned int encoder0PosActual    = 0;
-volatile unsigned int encoder0Pos = 0;
+bool turnedWhilePressed      = false;
+int16_t encoder0PosActual    = 0;
+volatile int16_t encoder0Pos = 0;
 
 uint8_t WmcButton;
 
@@ -128,12 +128,12 @@ void doEncoderA()
         if (digitalRead(encoder0PinB) == LOW)
         {
             // CW
-            encoder0Pos = encoder0Pos + 1;
+            encoder0Pos++;
         }
         else
         {
             // CCW
-            encoder0Pos = encoder0Pos - 1;
+            encoder0Pos--;
         }
     }
     else // must be a high-to-low edge on channel A
@@ -142,12 +142,12 @@ void doEncoderA()
         if (digitalRead(encoder0PinB) == HIGH)
         {
             // CW
-            encoder0Pos = encoder0Pos + 1;
+            encoder0Pos++;
         }
         else
         {
             // CCW
-            encoder0Pos = encoder0Pos - 1;
+            encoder0Pos--;
         }
     }
 }
@@ -159,7 +159,7 @@ int8_t DecoderUpdate(void)
     int8_t Delta = 0;
     if (encoder0Pos != encoder0PosActual)
     {
-        Delta             = encoder0Pos - encoder0PosActual;
+        Delta = (int8_t)(encoder0Pos - encoder0PosActual);
         encoder0PosActual = encoder0Pos;
     }
 
