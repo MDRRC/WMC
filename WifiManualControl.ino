@@ -32,6 +32,7 @@ Bounce WmcPulseSwitchPushButton = Bounce();
 unsigned long WmcStartMsPulseSwitchPushButton;
 unsigned long WmcUpdateTimer3Seconds;
 unsigned long WmcUpdatePulseSwitch;
+unsigned long WmcUpdateTimer5msec;
 unsigned long WmcUpdateTimer50msec;
 unsigned long WmcUpdateTimer100msec;
 unsigned long WmcUpdateTimer500msec;
@@ -46,6 +47,7 @@ uint8_t WmcButton;
 updateEvent3sec wmcUpdateEvent3Sec;
 pushButtonsEvent wmcPushButtonEvent;
 pulseSwitchEvent wmcPulseSwitchEvent;
+updateEvent5msec wmcUpdateEvent5msec;
 updateEvent50msec wmcUpdateEvent50msec;
 updateEvent100msec wmcUpdateEvent100msec;
 updateEvent500msec wmcUpdateEvent500msec;
@@ -53,6 +55,22 @@ updateEvent500msec wmcUpdateEvent500msec;
 /***********************************************************************************************************************
    L O C A L   F U N C T I O N S
  **********************************************************************************************************************/
+
+/***********************************************************************************************************************
+ */
+static bool WmcUpdate5msec(void)
+{
+    bool Result = false;
+
+    if (millis() - WmcUpdateTimer5msec > 5)
+    {
+        Result               = true;
+        WmcUpdateTimer5msec = millis();
+        send_event(wmcUpdateEvent5msec);
+    }
+
+    return (Result);
+}
 
 /***********************************************************************************************************************
  */
@@ -218,6 +236,7 @@ void loop()
     int8_t Delta = 0;
 
     /* Check for timed events. */
+    WmcUpdate5msec();
     WmcUpdate50msec();
     WmcUpdate100msec();
     WmcUpdate500msec();
