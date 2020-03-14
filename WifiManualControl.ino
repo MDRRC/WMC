@@ -64,7 +64,7 @@ static bool WmcUpdate5msec(void)
 
     if (millis() - WmcUpdateTimer5msec > 5)
     {
-        Result               = true;
+        Result              = true;
         WmcUpdateTimer5msec = millis();
         send_event(wmcUpdateEvent5msec);
     }
@@ -177,7 +177,7 @@ int8_t DecoderUpdate(void)
     int8_t Delta = 0;
     if (encoder0Pos != encoder0PosActual)
     {
-        Delta = (int8_t)(encoder0Pos - encoder0PosActual);
+        Delta             = (int8_t)(encoder0Pos - encoder0PosActual);
         encoder0PosActual = encoder0Pos;
     }
 
