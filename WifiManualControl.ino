@@ -201,7 +201,7 @@ void setup()
     /* Init the pulse / rotary encoder. */
     pinMode(encoder0PinA, INPUT_PULLUP);
     pinMode(encoder0PinB, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(encoder0PinA), doEncoderA, FALLING);
+    attachInterrupt(digitalPinToInterrupt(encoder0PinA), doEncoderA, CHANGE);
 
     /* Init debounces for switches. */
     pinMode(D7, INPUT_PULLUP);
