@@ -137,7 +137,7 @@ static bool WmcUpdate3Sec(void)
 
 /***********************************************************************************************************************
  */
-void doEncoderA()
+void ICACHE_RAM_ATTR doEncoderA()
 {
     // look for a low-to-high on channel A
     if (digitalRead(encoder0PinA) == HIGH)
