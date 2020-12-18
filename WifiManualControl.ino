@@ -280,7 +280,9 @@ void loop()
         }
         else
         {
-            turnedWhilePressed = false;
+            turnedWhilePressed         = false;
+            wmcPulseSwitchEvent.Status = released;
+            send_event(wmcPulseSwitchEvent);
         }
     }
     else if ((millis() - WmcUpdatePulseSwitch) > WMC_PULSE_SWITCH_UPDATE_TIME)
